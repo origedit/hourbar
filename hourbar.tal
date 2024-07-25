@@ -1,0 +1,174 @@
+( timer )
+
+|00 @System &vector $2 &expansion $2 &wst $1 &rst $1 &metadata $2 &r $2 &g $2 &b $2 &debug $1 &state $1
+|10 @Console &vector $2 &read $1 &pad $4 &type $1 &write $1 &error $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|30 @Audio &vector $2 &position $2 &output $1 &pad $3 &adsr $2 &length $2 &addr $2 &volume $1 &pitch $1
+|80 @Buttons &vector $2 &button $1 &key $1
+|90 @Mouse &vector $2 &x $2 &y $2 &state $1 &chord $1 &pad $4 &scrolly &scrolly-hb $1 &scrolly-lb $1
+|c0 @DateTime &year $2 &month $1 &day $1 &hour $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1
+
+|000
+
+	@sand $2
+
+|100
+
+@Start ( -> )
+	#f0bf .System/r DEO2
+	#f0c4 .System/g DEO2
+	#f0d8 .System/b DEO2
+	#0068 .Screen/width DEO2
+	#0158 .Screen/height DEO2
+	#06 .Screen/auto DEO
+	#004a .Screen/x DEO2
+	#0010 .Screen/y DEO2
+	#ec
+	&marks ( -- )
+	;marking .Screen/addr DEO2
+	#01 .Screen/sprite DEOk DEO
+	.Screen/y DEI2k #0001 SUB2 ROT DEO2
+	INC DUP ?/marks
+	POP #01 .Screen/auto DEO
+	#0050 .Screen/x DEO2
+	#000c .Screen/y DEO2
+	#f614
+	&numbers ( -- )
+	DUP <number>
+	.Screen/x DEI2k #0010 SUB2 ROT DEO2
+	.Screen/y DEI2k #004b ADD2 ROT DEO2
+	#05 SUB NEQk ?/numbers
+	POP2 <bar>
+	;<beep>/wave .Audio/addr DEO2
+	#0010 .Audio/length DEO2
+	#88 .Audio/volume DEO
+	#040c .Audio/adsr DEO2
+	;frame .Screen/vector DEO2
+	;mouse .Mouse/vector DEO2
+	;press .Buttons/vector DEO2
+	;blank .Audio/vector DEO2
+	;console .Console/vector DEO2
+	BRK
+
+@frame ( -> )
+	[ LIT2 04 &t $1 ] INCk ,/t STR
+	EQU ?{ BRK }
+	[ LIT2 00 _/t ] STR
+	#ffff <step>
+	BRK
+
+@mouse ( -> )
+	#00 .Screen/auto DEO
+	;/icn .Screen/addr DEO2
+	[ LIT2 &x $2 ] .Screen/x DEO2
+	[ LIT2 &y $2 ] .Screen/y DEO2
+	#40 /draw .Mouse/x DEI2 DUP2 ,/x STR2
+	.Screen/x DEO2
+	.Mouse/y DEI2 DUP2 ,/y STR2
+	.Screen/y DEO2
+	#43 /draw .Mouse/state DEI ?{ BRK }
+	.Mouse/y DEI2 #0010 LTH2k [ JMP SWP2 ] NIP2 #013c GTH2k [ JMP SWP2 ] NIP2 #013c SWP2 SUB2 #003c MUL2 <set>
+	#0000 .Audio/vector DEO2
+	BRK
+
+	&draw ( mode -- )
+	.Screen/x DEI2k #0003 SUB2 ROT DEO2
+	.Screen/y DEI2k #0003 SUB2 ROT DEO2
+	.Screen/sprite DEO
+	JMP2r
+
+	&icn [ eeee ee00 eeee ee00 ]
+
+@press ( -> )
+	.Buttons/button DEI DUP #10 AND ?/up
+	#20 AND ?/down
+	BRK
+
+	&up ( buttons -> )
+	POP #0384 <step>
+	BRK
+
+	&down ( -> )
+	#fc7c <step>
+	BRK
+
+@console ( -> )
+	.Console/read DEI [ LIT "0 ] SUB DUP #0a LTH ?{ POP BRK }
+	#00 SWP #0f MUL .sand LDZ2 #000a MUL2 ADD2 <set>
+	BRK
+
+@audio ( -> )
+	( <beep> ) BRK
+
+@<step> ( n* -- )
+	.sand LDZ2 ADD2
+	( >> )
+
+@<set> ( time* -- )
+	DUP2 #f000 LTH2 ?{
+		.Audio/vector DEI2 ORA ?{ <beep>
+			;audio .Audio/vector DEO2 }
+		POP2 #0000 !/set }
+	#0000 .Audio/vector DEO2
+	( >> )
+	&set ( time* -- )
+	.sand STZ2
+	<bar>
+	JMP2r
+
+@<bar> ( -- )
+	#62 .Screen/auto DEO
+	;blank .Screen/addr DEO2
+	#0010 .Screen/x DEO2
+	.sand LDZ2 #003c DIV2 DUP2 #012c SWP2 SUB2
+	( shadow ) DUP2 #03 SFT2 #ff SWP SUB #0010 .Screen/y DEO2
+	&shadow ( -- )
+	#08 .Screen/sprite DEO
+	INC DUP ?/shadow
+	POP2 #0010 ADD2 .Screen/y DEO2
+	#03 SFT2 #ff SWP SUB
+	&fill ( -- )
+	#04 .Screen/sprite DEO
+	INC DUP ?/fill
+	POP2 #013c .Screen/y DEO2
+	#01 .Screen/sprite DEO
+	#0018 .Screen/x DEO2
+	#0144 .Screen/y DEO2
+	#01 .Screen/auto DEO
+	.sand LDZ2 #000f DIV2 #003c DIV2k DUP <number>
+	MUL2 SUB2 ;/colon .Screen/addr DEO2
+	#01 .Screen/sprite DEO
+	<number>
+	POP JMP2r
+
+	&colon [ 0018 1800 0018 1800 ]
+
+@<number> ( n -- )
+	#0a DIVk DUP <digit>
+	MUL SUB
+	( >> )
+
+@<digit> ( n -- )
+	#30 SFT #00 SWP ;/icn ADD2 .Screen/addr DEO2
+	#01 .Screen/sprite DEO
+	JMP2r
+
+	&icn [
+	1c26 6666 6666 6438 1838 5818 1818 183c
+	3c46 6666 0418 317e 3c46 061c 0606 c438
+	1838 3858 d8fc 183c 766e 607c 0606 c438
+	0c18 307c 6666 6438 6e76 0408 1e78 1810
+	1c36 361c 3666 663c 3864 6666 3e06 c63c ]
+
+@<beep> ( -- )
+	#60 .Audio/pitch DEO
+	JMP2r
+
+	&wave [
+	00 00 10 20 40 70 a0 c0 d0 e0 f0 f0 f0 e0 b0 60 ]
+
+@marking [
+	f800 00c0 0000 c000 00c0 0000 c000 0000 ]
+
+@blank
+

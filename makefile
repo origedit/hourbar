@@ -22,4 +22,3 @@ lint: $(source)
 
 left:
 	(left $(source) &)
-

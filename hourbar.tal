@@ -51,7 +51,7 @@
 	BRK
 
 @frame ( -> )
-	[ LIT2 04 &t $1 ] INCk ,/t STR
+	[ LIT2 03 &t $1 ] INCk ,/t STR
 	EQU ?{ BRK }
 	[ LIT2 00 _/t ] STR
 	#ffff <step>

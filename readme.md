@@ -1,5 +1,7 @@
 # hourbar
 
+![preview image](preview.png)
+
 a graphical timer application based on [an app by tbsp](https://codeberg.org/tbsp/teatimer).
 
 ## running
